@@ -1,37 +1,56 @@
-import { useState } from 'react'
+import {
+  Card,
+  CardContent,
+  CardActions,
+  Typography,
+  Button,
+  Link as MuiLink
+} from '@mui/material'
 
 const Blog = ({ blog, user, onLike, onRemove }) => {
-  const [visible, setVisible] = useState(false)
-
-  const blogStyle = {
-    paddingTop: 10,
-    paddingLeft: 2,
-    border: 'solid',
-    borderWidth: 1,
-    marginBottom: 5
+  if (!blog) {
+    return null
   }
 
-  const canRemove = user && blog.user && blog.user.username === user.username
+  const isCreator = user && blog.user && blog.user.username === user.username
 
   return (
-    <div style={blogStyle} className="blog">
-      <div>
-        {blog.title} {blog.author}{' '}
-        <button onClick={() => setVisible(!visible)}>
-          {visible ? 'hide' : 'view'}
-        </button>
-      </div>
-      {visible && (
-        <div className="blog-details">
-          <div>{blog.url}</div>
-          <div>
-            likes {blog.likes} <button onClick={() => onLike(blog)}>like</button>
-          </div>
-          <div>{blog.user && blog.user.name}</div>
-          {canRemove && <button onClick={() => onRemove(blog)}>remove</button>}
-        </div>
+    <Card sx={{ mt: 2 }} className="blog">
+      <CardContent>
+        <Typography variant="h5" component="h2">
+          {blog.title}
+        </Typography>
+        <Typography color="text.secondary" gutterBottom>
+          by {blog.author}
+        </Typography>
+        <MuiLink href={blog.url} target="_blank" rel="noreferrer">
+          {blog.url}
+        </MuiLink>
+        <Typography sx={{ mt: 1 }}>likes {blog.likes}</Typography>
+        {blog.user && (
+          <Typography variant="body2" color="text.secondary">
+            added by {blog.user.name}
+          </Typography>
+        )}
+      </CardContent>
+      {user && (
+        <CardActions>
+          <Button variant="contained" size="small" onClick={() => onLike(blog)}>
+            like
+          </Button>
+          {isCreator && (
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              onClick={() => onRemove(blog)}
+            >
+              delete
+            </Button>
+          )}
+        </CardActions>
       )}
-    </div>
+    </Card>
   )
 }
 
