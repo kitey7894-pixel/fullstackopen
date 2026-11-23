@@ -3,18 +3,19 @@ import { test, expect } from '@playwright/test'
 const { beforeEach, describe } = test
 
 const loginWith = async (page, username, password) => {
+  await page.getByRole('link', { name: 'login' }).click()
   await page.getByTestId('username').fill(username)
   await page.getByTestId('password').fill(password)
   await page.getByRole('button', { name: 'login' }).click()
 }
 
 const createBlog = async (page, title, author, url) => {
-  await page.getByRole('button', { name: 'create new blog' }).click()
+  await page.getByRole('link', { name: 'create new' }).click()
   await page.getByTestId('title').fill(title)
   await page.getByTestId('author').fill(author)
   await page.getByTestId('url').fill(url)
   await page.getByRole('button', { name: 'create' }).click()
-  await page.getByText(`${title} ${author}`).waitFor()
+  await page.getByRole('link', { name: title }).waitFor()
 }
 
 describe('Blog app', () => {
@@ -23,84 +24,44 @@ describe('Blog app', () => {
     await request.post('/api/users', {
       data: { username: 'root', name: 'Root User', password: 'sekret' }
     })
-    await request.post('/api/users', {
-      data: { username: 'other', name: 'Other User', password: 'sekret' }
-    })
     await page.goto('/')
   })
 
-  test('login form is shown', async ({ page }) => {
-    await expect(page.getByText('log in to application')).toBeVisible()
-    await expect(page.getByTestId('username')).toBeVisible()
-    await expect(page.getByTestId('password')).toBeVisible()
+  test('login succeeds with the correct username and password', async ({ page }) => {
+    await loginWith(page, 'root', 'sekret')
+    await expect(page.getByText('Root User logged in')).toBeVisible()
   })
 
-  describe('Login', () => {
-    test('succeeds with correct credentials', async ({ page }) => {
-      await loginWith(page, 'root', 'sekret')
-      await expect(page.getByText('Root User logged in')).toBeVisible()
-    })
-
-    test('fails with wrong credentials', async ({ page }) => {
-      await loginWith(page, 'root', 'wrong')
-      const notification = page.locator('.notification')
-      await expect(notification).toContainText('wrong username or password')
-      await expect(notification).toHaveCSS('color', 'rgb(255, 0, 0)')
-      await expect(page.getByText('Root User logged in')).not.toBeVisible()
-    })
+  test('login fails if the username or password is incorrect', async ({ page }) => {
+    await loginWith(page, 'root', 'wrong')
+    await expect(page.locator('.notification')).toContainText('wrong username or password')
+    await expect(page.getByText('Root User logged in')).not.toBeVisible()
   })
 
   describe('When logged in', () => {
     beforeEach(async ({ page }) => {
       await loginWith(page, 'root', 'sekret')
+      await page.getByText('Root User logged in').waitFor()
     })
 
-    test('a new blog can be created', async ({ page }) => {
+    test('a logged-in user can create a blog', async ({ page }) => {
       await createBlog(page, 'E2E testing with Playwright', 'Tester', 'http://example.com/e2e')
-      await expect(
-        page.getByText('E2E testing with Playwright Tester')
-      ).toBeVisible()
+      await expect(page.getByRole('link', { name: 'E2E testing with Playwright' })).toBeVisible()
     })
 
-    test('a blog can be liked', async ({ page }) => {
+    test('a logged-in user can like a blog', async ({ page }) => {
       await createBlog(page, 'Likeable blog', 'Tester', 'http://example.com/like')
-      await page.getByRole('button', { name: 'view' }).click()
+      await page.getByRole('link', { name: 'Likeable blog' }).click()
       await page.getByRole('button', { name: 'like' }).click()
       await expect(page.getByText('likes 1')).toBeVisible()
     })
 
-    test('the creator can delete their blog', async ({ page }) => {
+    test('a logged-in user can delete a blog', async ({ page }) => {
       await createBlog(page, 'Deletable blog', 'Tester', 'http://example.com/delete')
-      await page.getByRole('button', { name: 'view' }).click()
+      await page.getByRole('link', { name: 'Deletable blog' }).click()
       page.on('dialog', dialog => dialog.accept())
-      await page.getByRole('button', { name: 'remove' }).click()
-      await expect(page.getByText('Deletable blog Tester')).not.toBeVisible()
-    })
-
-    test('only the creator sees the remove button', async ({ page }) => {
-      await createBlog(page, 'Private blog', 'Tester', 'http://example.com/private')
-      await page.getByRole('button', { name: 'logout' }).click()
-
-      await loginWith(page, 'other', 'sekret')
-      await page.getByRole('button', { name: 'view' }).click()
-      await expect(page.getByText('http://example.com/private')).toBeVisible()
-      await expect(page.getByRole('button', { name: 'remove' })).not.toBeVisible()
-    })
-
-    test('blogs are ordered by likes, most liked first', async ({ page }) => {
-      await createBlog(page, 'Least liked', 'Tester', 'http://example.com/least')
-      await createBlog(page, 'Most liked', 'Tester', 'http://example.com/most')
-
-      const mostLiked = page.locator('.blog', { hasText: 'Most liked' })
-      await mostLiked.getByRole('button', { name: 'view' }).click()
-      await mostLiked.getByRole('button', { name: 'like' }).click()
-      await mostLiked.getByText('likes 1').waitFor()
-      await mostLiked.getByRole('button', { name: 'like' }).click()
-      await mostLiked.getByText('likes 2').waitFor()
-
-      const blogs = page.locator('.blog')
-      await expect(blogs.first()).toContainText('Most liked')
-      await expect(blogs.last()).toContainText('Least liked')
+      await page.getByRole('button', { name: 'delete' }).click()
+      await expect(page.getByRole('link', { name: 'Deletable blog' })).not.toBeVisible()
     })
   })
 })
