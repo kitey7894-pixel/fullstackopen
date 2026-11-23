@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TextField, Button, Typography, Stack } from '@mui/material'
 
 const BlogForm = ({ createBlog }) => {
   const [title, setTitle] = useState('')
@@ -15,36 +16,36 @@ const BlogForm = ({ createBlog }) => {
 
   return (
     <div>
-      <h2>create new</h2>
+      <Typography variant="h4" component="h1" sx={{ my: 2 }}>
+        create new
+      </Typography>
       <form onSubmit={addBlog}>
-        <div>
-          title:{' '}
-          <input
+        <Stack spacing={2} sx={{ maxWidth: 480 }}>
+          <TextField
+            label="title"
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="title"
-            data-testid="title"
+            slotProps={{ htmlInput: { 'data-testid': 'title' } }}
           />
-        </div>
-        <div>
-          author:{' '}
-          <input
+          <TextField
+            label="author"
             value={author}
             onChange={e => setAuthor(e.target.value)}
             placeholder="author"
-            data-testid="author"
+            slotProps={{ htmlInput: { 'data-testid': 'author' } }}
           />
-        </div>
-        <div>
-          url:{' '}
-          <input
+          <TextField
+            label="url"
             value={url}
             onChange={e => setUrl(e.target.value)}
             placeholder="url"
-            data-testid="url"
+            slotProps={{ htmlInput: { 'data-testid': 'url' } }}
           />
-        </div>
-        <button type="submit">create</button>
+          <Button variant="contained" type="submit">
+            create
+          </Button>
+        </Stack>
       </form>
     </div>
   )
